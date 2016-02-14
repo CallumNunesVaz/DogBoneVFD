@@ -1,0 +1,153 @@
+/*
+ * File:   display.c
+ * Author: Callum
+ *
+ * Created on 1 February 2016, 2:54 PM
+ */
+
+#include "display.h"
+
+// Fosc  frequency for _delay()  library
+#define _XTAL_FREQ 16000000
+
+/* ------------------------- S U B R O U T I N E S ------------------------- */
+
+/* Set up the display for other functions to manipulate it */
+void open_Display(void) {
+    update_Local_Settings();
+    VREG_EN = 1; // enable 2.5V and 20V voltage regulators
+    MAX6920_BLANK = 0; // allow the anode driver to power the anodes
+    // reset the timer values
+    TMR1 = 0;
+    TMR2 = 0;
+    TMR4 = 0;
+    TMR6 = 0;
+    // Turn on the timers
+    T1CONbits.TMR1ON = 1; // turn on  0.131072s timer for display-timeout (see below)
+    T2CONbits.TMR2ON = 1; // turn on timer for send_Code() call
+    T4CONbits.TMR4ON = 1; // Turn on timer that handles H-Bridge switching
+    T6CONbits.TMR6ON = 1; // turn on matching timer of T2 for Vreg control
+}
+
+/* Perform closing functions to stop functions using the display */
+void close_Display(void) {
+    T1CONbits.TMR1ON = 0; // turn off 0.131072s timer for display-timeout (see below)
+    T2CONbits.TMR2ON = 0; // turn off 1kHz timer for display_Digits/Dots/Letters() calls 
+    T4CONbits.TMR4ON = 0; // Turn off timer that handles H-Bridge switching
+    T6CONbits.TMR6ON = 0; // turn on matching timer of T2 for Vreg control
+    MAX6920_BLANK = 1; // disable the anode driver from powering the anodes
+    VREG_EN = 0; // disable 2.5V and 20V voltage regulators
+}
+
+/* send code to MAX6920 to display the two dots in the middle of the display 
+ * This takes approximately 1ms to complete */
+void display_Dots(void) {
+    // send code to MAX6920
+    send_Code(128);
+}
+
+/* The Filament is a H-bridge driven by the CCP2 module in half-bridge PWM mode
+ * on pins RA4 and RA5. This allows the brightness across the display to be 
+ * more even. */
+void init_Filament_Driver(void) {
+    byte temp;
+    APFCON1bits.CCP2SEL = 1; // CCP2/P2A module tied to RA5
+    APFCON1bits.P2BSEL = 1; // P2B module tied to RA4
+    CCP2CON = 0b10001100; // half-bridge-PWM-mode, PxA and PxB active-high
+    temp = CCPTMRS0;
+    CCPTMRS0 = (temp & 243) + 4; // CCP2 mapped to timer 4
+    CCP2AS = 0; // Auto-shutdown disabled
+    PWM2CON = 0x0F; // Restart disabled, 15*(Fosc/4) delay between pins
+    PSTR2CON = 0; // PWM steering disabled  (UNUSED)
+    CCPR2L = 0b01111101; // with LSB in CCP2CON this makes 500 (2*PR4=50% duty)
+    CCPR2H = 0;
+}
+
+/*  */
+void load_Brightness(void) {
+    byte temp;
+    temp = eeprom_read(MAX_BRIGHT_EEPROM_ADDR);
+    PR6 = (temp - 1)*120 + 8;
+}
+
+/*  */
+void load_Orientation(void) {
+    POS = get_Orientation_EEPROM();
+}
+
+/* */
+void load_Hr_Mode(void) {
+    HR_MODE = get_Hr_Mode_EEPROM() >> 5;
+}
+
+/* take the current 12-bit code and render it if it were shifted up or down by 
+ * 1-3 segments. the dir parameter determines the amount and direction, 
+ * positive is up and negative is down, and the magnitude is the amount of 
+ * vertical segments you want to shift it by */
+int shift_Segments(int code_In, signed char dir) {
+    int code_Out;
+    signed char i, recur = 1, temp;
+    // check shifting conditions
+    if (dir >= 3 || dir <= -3) return 0; // if all segments now off of display
+    if (dir == 0) return code_In; // if not shifted
+    if (dir == 2 || dir == -2) { // if recursion needed
+        recur = 2; // set for recursion
+        dir /= 2; // -2 or 2 set --> -1 or 1
+    }
+    dir += (1 + POS); // place is 0=D_L, 1=D_R, 2=U_L, 3=U_R
+    dir =  ((dir&2)>>1) - dir&1;
+    dir /= dir;
+    // convert code according to direction and orientation
+    while (recur) {
+        code_Out = 0;
+        for (i = 0; i < 12; i++) {
+            code_Out += (code_In & 1)*((shift_Codes[dir])[i]);
+            code_In >>= 1;
+        }
+        code_In = code_Out; // if recursion takes place
+        recur--;
+    }
+    return code_Out;
+}
+
+/* Routine for sending 12-bit numbers to the MAX6920 shift register, According 
+ * to the datasheet the MAX6920 min width of pulses in 100ns at max (~11MHz) so 
+ * Fosc/4 = 4MHz should be fine without nops for MAX6920 logic inputs. 
+ * Additionally this routine will wait for 1ms between calls by polling timer 2 
+ * and timer 6 which are configured for 1kHz operation. 
+ */
+void send_Code(unsigned int code) {
+    // declare variables
+    byte i;
+    // push code to MAX6920 shift register bit by bit
+    for (i = 0; i < 12; i++) {
+        MAX6920_CLK = 0; // clock low
+        MAX6920_DIN = code & 1; // set data input as current LSB of code
+        MAX6920_CLK = 1; // clock high to add data to MAX6920
+        code >>= 1; // shift code bits down, ready to set next bit
+    }
+    // Latch code to display
+    MAX6920_LOAD = 1;
+    NOP();
+    MAX6920_LOAD = 0;
+    
+    // timer flag polling for timing between calls
+    while (!PIR3bits.TMR6IF);
+    PIR3bits.TMR6IF = 0; // reset flag
+    MAX6920_BLANK = 1; // disable anode controller
+    // wait till 1ms has passed between calls of this function
+    while (!PIR1bits.TMR2IF);
+    PIR1bits.TMR2IF = 0; // reset flag
+    // re-enable display drivers...
+    MAX6920_BLANK = 0; // enable anode controller
+    TMR6 = 0;
+    T6CONbits.TMR6ON = 1; // turn on timer 6
+}
+
+
+void update_Local_Settings(void) {
+    // load the settings
+    load_Orientation();
+    load_Hr_Mode();
+    load_Brightness();
+}
