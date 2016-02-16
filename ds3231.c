@@ -32,20 +32,11 @@ byte get_Month(void) {
 
 /* retrieve time over I2C in BCD from the DS3231M real-time clock module */
 int get_Time(void) {
-    byte temp;
     int time;
-    I2CStartBit(); // start transmission
-    I2CSend(DS3231_ADDR + I2C_WRITE); // manipulate counter to go to address 0x01
-    I2CSend(0x01); // ...
-    I2CRestartBit(); // restart transmission for reads
-    I2CSend(DS3231_ADDR + I2C_READ); // ...
-    temp = I2CRead(); // read minutes from address 0x01
-    I2CAckBit(); // ACK to indicate more bytes needed
-    time = I2CRead(); // read hours from address 0x02
-    I2CNackBit(); // NACK to indicate finish of reads
-    I2CStopBit(); // Stop communications
-    time <<= 8; // format gathered data, xxHH HHHH MMMM MMMM
-    return time + temp;
+    time = get_Hours();
+    time <<= 8;
+    time += get_Minutes();
+    return time;
 }
 
 /* retrieve minutes byte from clock */

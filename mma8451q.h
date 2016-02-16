@@ -5,6 +5,9 @@
 #include "i2c.h"
 #include "data.h"
 
+// Fosc  frequency for _delay()  library
+#define _XTAL_FREQ 16000000   
+
 #define byte unsigned char
 #define accel_x signed_XYZ[0]
 #define accel_y signed_XYZ[1]

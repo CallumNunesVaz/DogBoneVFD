@@ -53,6 +53,7 @@ void write_MMA8451Q_Byte(byte data, byte reg) {
     I2CSend(reg);
     I2CSend(data);
     I2CStopBit();
+    __delay_us(10);
 }
 
 byte read_MMA8451Q_Byte(byte reg) {
@@ -66,6 +67,7 @@ byte read_MMA8451Q_Byte(byte reg) {
     I2CNackBit();
     I2CStopBit();
     return data;
+    __delay_us(10);
 }
 
 void load_mma8451q_Data(void) {

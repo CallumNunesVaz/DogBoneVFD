@@ -53,13 +53,13 @@
 #define ONLY_MINS 2
 
 // Pin definitions
-#define MAX6920_CLK PORTCbits.RC2
-#define MAX6920_BLANK PORTCbits.RC4
-#define MAX6920_DIN PORTCbits.RC0
-#define MAX6920_LOAD PORTBbits.RB5
-#define HBridge_A PORTAbits.RA5
-#define HBridge_B PORTAbits.RA4
-#define VREG_EN PORTCbits.RC5
+#define MAX6920_CLK LATCbits.LATC2
+#define MAX6920_BLANK LATCbits.LATC4
+#define MAX6920_DIN LATCbits.LATC0
+#define MAX6920_LOAD LATBbits.LATB5
+#define HBridge_A LATAbits.LATA5
+#define HBridge_B LATAbits.LATA4
+#define VREG_EN LATCbits.LATC5
 #define SWITCH2 PORTCbits.RC6
 #define SWITCH1 PORTAbits.RA0
 

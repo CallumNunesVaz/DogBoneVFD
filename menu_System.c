@@ -152,13 +152,11 @@ void load_Menu(byte flash) {
     // reset Array
     for (i = 3; i >= 0; i--) menu[i] = 0;
     // assign new contents
-    if (CURRENT_MENU <= 2) {
-        // if displaying time or time-correction
+    if (CURRENT_MENU <= 2) { // if displaying time or time-correction
         for (i = 3; i >= 1; i--)
             menu[i] = (num_Codes[POS])[(get_Time()>>(4 * (3 - i)))&0x0F];
         // special case for first digit in 12H mode (it sets AM/PM and 12H bits)
-        menu[0] = (num_Codes[POS])[(get_Hours()>>4)&0x03];
-        
+        menu[0] = (num_Codes[POS])[(get_Hours()>>4)&(1+(get_Hr_Mode_EEPROM()>>5)<<1)];
         if (menu[0] == (num_Codes[POS])[0]) // remove leading zero's
             menu[0] = 0;
         if (flash && CURRENT_MENU) { // if correcting, flash portion to correct
@@ -168,7 +166,8 @@ void load_Menu(byte flash) {
     } else { // else display settings/data stored either in DS3231 or EEPROM
         // gather data
         if (CURRENT_MENU <= 5) temp = read_DS3231_byte(CURRENT_MENU + 1);
-        if (CURRENT_MENU >= 6) temp = eeprom_read(CURRENT_MENU);
+        if (CURRENT_MENU == 6) temp = read_MMA8451Q_Byte(WHO_AM_I) - 0x88;
+        if (CURRENT_MENU >= 7) temp = eeprom_read(CURRENT_MENU);
         if (CURRENT_MENU == ANGLE_LIVE) temp = get_Tilt();
         // display constant letters
         menu[0] = (letter_Codes[POS])[menu_Letters_GRID1[CURRENT_MENU]];

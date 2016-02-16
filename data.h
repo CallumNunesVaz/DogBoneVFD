@@ -11,10 +11,6 @@
 
 // definitions for code simplification 
 #define byte unsigned char
-#define I2C_WRITE 0
-#define I2C_READ 1
-
-#define byte unsigned char
 
 // EEPROM Addresses
 #define MAX_BRIGHT_EEPROM_ADDR 0x06
@@ -25,7 +21,7 @@
 #define ORIENTATION_EEPROM_ADDR 0x0B
 #define LIGHT_SCALE_EEPROM_ADDR 0x0C
 
-#define LDR_EN PORTBbits.RB7
+#define LDR_EN LATBbits.LATB7
 
 
 /* --------------------------- P R O T O T Y P E S ------------------------- */

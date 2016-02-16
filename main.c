@@ -48,10 +48,10 @@
 #define SWITCH2 PORTCbits.RC6
 #define SWITCH1 PORTAbits.RA0
 #define LDR PORTCbits.RC7 
-#define LDR_EN PORTBbits.RB7
-#define LED PORTAbits.RA1
+#define LDR_EN LATBbits.LATB7
+#define LED LATAbits.LATA1
 #define INT PORTAbits.RA2
-#define DS3231M_RST PORTCbits.RC1
+#define DS3231M_RST LATCbits.LATC1
 #define SDA PORTBbits.RB4
 #define SCL PORTBbits.RB6
 
