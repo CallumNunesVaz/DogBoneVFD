@@ -1,9 +1,14 @@
-/*
- * File:   display.c
- * Author: Callum
- *
- * Created on 1 February 2016, 2:54 PM
- */
+/* -------------------------------------------------------------------------- *
+ * File: display.c
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * A library for operating the IVL2-7/5 vacuum fluorescent display via the 
+ * MAX6920 display driver as laid out on a custom PCB.  
+ * -------------------------------------------------------------------------- */
 
 #include "display.h"
 
@@ -14,7 +19,6 @@
 
 /* Set up the display for other functions to manipulate it */
 void open_Display(void) {
-    update_Local_Settings();
     VREG_EN = 1; // enable 2.5V and 20V voltage regulators
     MAX6920_BLANK = 0; // allow the anode driver to power the anodes
     // reset the timer values
@@ -63,53 +67,6 @@ void init_Filament_Driver(void) {
     CCPR2H = 0;
 }
 
-/*  */
-void load_Brightness(void) {
-    byte temp;
-    temp = eeprom_read(MAX_BRIGHT_EEPROM_ADDR);
-    PR6 = (temp - 1)*120 + 8;
-}
-
-/*  */
-void load_Orientation(void) {
-    POS = get_Orientation_EEPROM();
-}
-
-/* */
-void load_Hr_Mode(void) {
-    HR_MODE = get_Hr_Mode_EEPROM() >> 5;
-}
-
-/* take the current 12-bit code and render it if it were shifted up or down by 
- * 1-3 segments. the dir parameter determines the amount and direction, 
- * positive is up and negative is down, and the magnitude is the amount of 
- * vertical segments you want to shift it by */
-int shift_Segments(int code_In, signed char dir) {
-    int code_Out;
-    signed char i, recur = 1, temp;
-    // check shifting conditions
-    if (dir >= 3 || dir <= -3) return 0; // if all segments now off of display
-    if (dir == 0) return code_In; // if not shifted
-    if (dir == 2 || dir == -2) { // if recursion needed
-        recur = 2; // set for recursion
-        dir /= 2; // -2 or 2 set --> -1 or 1
-    }
-    dir += (1 + POS); // place is 0=D_L, 1=D_R, 2=U_L, 3=U_R
-    dir =  ((dir&2)>>1) - dir&1;
-    dir /= dir;
-    // convert code according to direction and orientation
-    while (recur) {
-        code_Out = 0;
-        for (i = 0; i < 12; i++) {
-            code_Out += (code_In & 1)*((shift_Codes[dir])[i]);
-            code_In >>= 1;
-        }
-        code_In = code_Out; // if recursion takes place
-        recur--;
-    }
-    return code_Out;
-}
-
 /* Routine for sending 12-bit numbers to the MAX6920 shift register, According 
  * to the datasheet the MAX6920 min width of pulses in 100ns at max (~11MHz) so 
  * Fosc/4 = 4MHz should be fine without nops for MAX6920 logic inputs. 
@@ -142,12 +99,4 @@ void send_Code(unsigned int code) {
     MAX6920_BLANK = 0; // enable anode controller
     TMR6 = 0;
     T6CONbits.TMR6ON = 1; // turn on timer 6
-}
-
-
-void update_Local_Settings(void) {
-    // load the settings
-    load_Orientation();
-    load_Hr_Mode();
-    load_Brightness();
 }

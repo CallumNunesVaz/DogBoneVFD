@@ -1,9 +1,15 @@
-/*
- * File:   data.c
- * Author: Callum
- *
- * Created on 1 February 2016, 4:39 PM
- */
+/* -------------------------------------------------------------------------- *
+ * File: data.c
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * Simple Library for managing the data that the wristwatch needs to operate.
+ * This includes get and set methods for the EEPROM-stored, as well as standard 
+ * byte to 4-bit BCD byte conversion.
+ * -------------------------------------------------------------------------- */
 
 #include "data.h"
 #include "ds3231.h"

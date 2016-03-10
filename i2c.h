@@ -1,14 +1,19 @@
-/* Slight modification of hi-tech c i2c library found at:
- * <http://www.8051projects.net/wiki/I2C_Implementation_on_PIC>
+/* -------------------------------------------------------------------------- *
+ * File: i2c.h
  * 
- * For use with XC8 compiler, and pic16f1828
- */ 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * Simple Library for managing the i2C functions on the PIC16F1828
+ * 
+ * Slight modification of hi-tech c i2c library found at:
+ * <http://www.8051projects.net/wiki/I2C_Implementation_on_PIC>
+ * -------------------------------------------------------------------------- */
 
-// This is a guard condition so that contents of this file are not included
-// more than once.  
 #ifndef I2C_H
 #define	I2C_H
-
 
 #include <xc.h>
 

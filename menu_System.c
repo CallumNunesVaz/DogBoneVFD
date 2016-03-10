@@ -1,9 +1,15 @@
-/*
- * File:   menu_System.c
- * Author: Callum
- *
- * Created on 1 February 2016, 3:22 PM
- */
+/* -------------------------------------------------------------------------- *
+ * File: menu_System.c
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * A library for managing the menu system of a wristwatch that draws letters,
+ * digits, and symbols on the 4 7-segment sections. This library also manages 
+ * the button presses and their actions.
+ * -------------------------------------------------------------------------- */
 
 #include "menu_System.h"
 
@@ -13,11 +19,11 @@ byte CURRENT_MENU; // the currently selected menu, either time or settings
 int menu[4];
 
 // list of functions for acting on switch 2 press for menu index of 1 to 12
-void (*switch2_func_ptr[12])(void) = {inc_Minutes, inc_Hours, inc_Days, 
-                                inc_Months, inc_Years, inc_Brightness_EEPROM, 
-                                inc_Tilt_Angle_EEPROM, inc_Tilt_Range_EEPROM, 
-                                toggle_Hr_Mode_EEPROM, inc_Timeout_EEPROM, 
-                                toggle_Orientation_EEPROM, toggle_Light_Sensing_EEPROM};
+void (*switch2_func_ptr[12])(void) = {inc_Minutes, inc_Hours, inc_Days,
+    inc_Months, inc_Years, inc_Brightness_EEPROM,
+    inc_Tilt_Angle_EEPROM, inc_Tilt_Range_EEPROM,
+    toggle_Hr_Mode_EEPROM, inc_Timeout_EEPROM,
+    toggle_Orientation_EEPROM, toggle_Light_Sensing_EEPROM};
 
 /* ------------------------- S U B R O U T I N E S ------------------------- */
 
@@ -42,7 +48,7 @@ byte button_State(void) {
 void display_Animation(void) {
     byte i;
     char count = 0;
-    
+    // grab current and previous menu, store for later use
     close_Display();
     int menu_Prev[4], menu_Now[4], render[4];
     for (i = 0; i < 4; i++)
@@ -51,14 +57,14 @@ void display_Animation(void) {
     load_Menu(0); // render it for global access
     for (i = 0; i < 4; i++)
         menu_Now[i] = menu[i]; // grab new menu
-    
+
     for (i = 0; i < 4; i++)
-                render[i] = shift_Segments(menu_Prev[i], 0 - (count))
-                + shift_Segments(menu_Now[i], 4 - (count));
+        render[i] = shift_Segments(menu_Prev[i], 0 - (count))
+        + shift_Segments(menu_Now[i], 4 - (count));
     open_Display();
-    while (count <= 4) { // count increments every 0.125s
+    while (count <= 4) { // count increments every 0.13s
         for (i = 0; i < 4; i++) send_Code(render[i]+(grid_Codes[POS])[i]);
-        // check the timer
+        // render code every 0.13 seconds
         if (PIR1bits.TMR1IF) {
             count++;
             PIR1bits.TMR1IF = 0;
@@ -66,7 +72,7 @@ void display_Animation(void) {
                 render[i] = shift_Segments(menu_Prev[i], 0 - (count))
                 + shift_Segments(menu_Now[i], 4 - (count));
         }
-        
+
     }
 }
 
@@ -80,6 +86,7 @@ void display_Current_Menu(void) {
     count = 0;
     count_Max = (bcd_To_Byte(get_Timeout_EEPROM()) / 5)*4;
     // set up the display
+    update_Local_Settings();
     open_Display();
     // enter loop for 1-6 seconds (depending on settings)
     while (count <= count_Max) { // count increments every 0.125s
@@ -95,7 +102,7 @@ void display_Current_Menu(void) {
                     else next_Menu();
                     break;
                 case 2:
-                    perform_Switch2_Action();                    
+                    perform_Switch2_Action();
                     break;
             }
             count = 0; // reset the count variable
@@ -145,6 +152,23 @@ void init_Timers(void) {
     PIR3bits.TMR6IF = 0;
 }
 
+/*  */
+void load_Brightness(void) {
+    byte temp;
+    temp = eeprom_read(MAX_BRIGHT_EEPROM_ADDR);
+    PR6 = (temp - 1)*120 + 8;
+}
+
+/*  */
+void load_Orientation(void) {
+    POS = get_Orientation_EEPROM();
+}
+
+/* */
+void load_Hr_Mode(void) {
+    HR_MODE = get_Hr_Mode_EEPROM() >> 5;
+}
+
 /* THIS USES 30% OF PROGRAM MEMORY!!!*/
 void load_Menu(byte flash) {
     signed char i;
@@ -156,7 +180,7 @@ void load_Menu(byte flash) {
         for (i = 3; i >= 1; i--)
             menu[i] = (num_Codes[POS])[(get_Time()>>(4 * (3 - i)))&0x0F];
         // special case for first digit in 12H mode (it sets AM/PM and 12H bits)
-        menu[0] = (num_Codes[POS])[(get_Hours()>>4)&(1+(get_Hr_Mode_EEPROM()>>5)<<1)];
+        menu[0] = (num_Codes[POS])[(get_Hours() >> 4)&(1 + (get_Hr_Mode_EEPROM() >> 5)*2)];
         if (menu[0] == (num_Codes[POS])[0]) // remove leading zero's
             menu[0] = 0;
         if (flash && CURRENT_MENU) { // if correcting, flash portion to correct
@@ -165,9 +189,8 @@ void load_Menu(byte flash) {
         }
     } else { // else display settings/data stored either in DS3231 or EEPROM
         // gather data
-        if (CURRENT_MENU <= 5) temp = read_DS3231_byte(CURRENT_MENU + 1);
-        if (CURRENT_MENU == 6) temp = read_MMA8451Q_Byte(WHO_AM_I) - 0x88;
-        if (CURRENT_MENU >= 7) temp = eeprom_read(CURRENT_MENU);
+        if (CURRENT_MENU <= 5) temp = read_Ds3231_Byte(CURRENT_MENU + 1);
+        if (CURRENT_MENU >= 6) temp = eeprom_read(CURRENT_MENU);
         if (CURRENT_MENU == ANGLE_LIVE) temp = get_Tilt();
         // display constant letters
         menu[0] = (letter_Codes[POS])[menu_Letters_GRID1[CURRENT_MENU]];
@@ -176,18 +199,19 @@ void load_Menu(byte flash) {
         if (CURRENT_MENU <= TIMEOUT || CURRENT_MENU == ANGLE_LIVE) {
             menu[2] = (num_Codes[POS])[temp >> 4];
             menu[3] = (num_Codes[POS])[temp & 0x0F];
-        }
-        if (CURRENT_MENU == ORIENT)
-            menu[0] = (letter_Codes[POS])[LETTER_L + temp * 5];
-        if (CURRENT_MENU == LIGHT_SCALING) {
-            menu[2] = (letter_Codes[POS])[LETTER_o];
-            menu[3] = (letter_Codes[POS])[LETTER_F + temp * 5];
-        }
-        if (CURRENT_MENU == DATE) {
-            menu[0] = (num_Codes[POS])[get_Day() >> 4];
-            menu[1] = (num_Codes[POS])[get_Day()&0x0F];
-            menu[2] = (num_Codes[POS])[get_Month() >> 4];
-            menu[3] = (num_Codes[POS])[get_Month()&0x0F];
+        } else {
+            if (CURRENT_MENU == ORIENT)
+                menu[0] = (letter_Codes[POS])[LETTER_L + temp * 5];
+            if (CURRENT_MENU == LIGHT_SCALING) {
+                menu[2] = (letter_Codes[POS])[LETTER_o];
+                menu[3] = (letter_Codes[POS])[LETTER_F + temp * 5];
+            }
+            if (CURRENT_MENU == DATE) {
+                menu[0] = (num_Codes[POS])[get_Day() >> 4];
+                menu[1] = (num_Codes[POS])[get_Day()&0x0F];
+                menu[2] = (num_Codes[POS])[get_Month() >> 4];
+                menu[3] = (num_Codes[POS])[get_Month()&0x0F];
+            }
         }
     }
 }
@@ -206,6 +230,7 @@ void perform_Switch2_Action(void) {
     byte temp;
     if (CURRENT_MENU == TIME || CURRENT_MENU == DATE) return;
     (*switch2_func_ptr[CURRENT_MENU - 1])();
+    update_Local_Settings();
     load_Menu(0); // load the working byte global variable
 }
 
@@ -213,4 +238,42 @@ void perform_Switch2_Action(void) {
 void reset_Menu(void) {
     CURRENT_MENU = TIME;
     load_Menu(0);
+}
+
+/* take the current 12-bit code and render it if it were shifted up or down by 
+ * 1-3 segments. the dir parameter determines the amount and direction, 
+ * positive is up and negative is down, and the magnitude is the amount of 
+ * vertical segments you want to shift it by */
+int shift_Segments(int code_In, signed char dir) {
+    int code_Out;
+    signed char i, recur = 1, temp;
+    // check shifting conditions
+    if (dir >= 3 || dir <= -3) return 0; // if all segments now off of display
+    if (dir == 0) return code_In; // if not shifted
+    if (dir == 2 || dir == -2) { // if recursion needed
+        recur = 2; // set for recursion
+        dir /= 2; // -2 or 2 set --> -1 or 1
+    }
+    dir += (1 + POS); // place is 0=D_L, 1=D_R, 2=U_L, 3=U_R
+    dir =  ((dir&2)>>1) - dir&1;
+    dir /= dir;
+    // convert code according to direction and orientation
+    while (recur) {
+        code_Out = 0;
+        for (i = 0; i < 12; i++) {
+            code_Out += (code_In & 1)*((shift_Codes[dir])[i]);
+            code_In >>= 1;
+        }
+        code_In = code_Out; // if recursion takes place
+        recur--;
+    }
+    return code_Out;
+}
+
+/*  */
+void update_Local_Settings(void) {
+    // load the settings
+    load_Orientation();
+    load_Hr_Mode();
+    load_Brightness();
 }

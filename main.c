@@ -1,12 +1,13 @@
-/*
- * File:   VFDWatch.c
+/* -------------------------------------------------------------------------- *
+ * File: main.c
  * 
  * Author: Callum Nunes-Vaz
- *
- * Created on 3 December 2015, 12:15 AM
  * 
- * Target Device: PIC16F1828 (20-pin)
- */
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * Main routine for the VFD wristwatch.
+ * -------------------------------------------------------------------------- */
 
 /* ------------ C O N F I G U R A T I O N    R E G I S T E R S ------------- */
 
@@ -82,6 +83,7 @@ byte light_Level_Percent(void);
 
 int main(void) {
     init();
+    while(SWITCH1);
     while (1) {
         if (!SWITCH1) {
             while (!SWITCH1);
@@ -89,7 +91,6 @@ int main(void) {
         }
     }
 }
-
 
 /* ------------------------- S U B R O U T I N E S ------------------------- */
 

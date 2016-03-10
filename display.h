@@ -1,6 +1,16 @@
+/* -------------------------------------------------------------------------- *
+ * File: display.h
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * A library for operating the IVL2-7/5 vacuum fluorescent display via the 
+ * MAX6920 display driver.  
+ * -------------------------------------------------------------------------- */
 
-// This is a guard condition so that contents of this file are not included
-// more than once.  
+
 #ifndef DISPLAY_H
 #define	DISPLAY_H
 
@@ -63,21 +73,6 @@
 #define SWITCH2 PORTCbits.RC6
 #define SWITCH1 PORTAbits.RA0
 
-typedef enum HR_MODE {
-    MODE_12H, MODE_24H
-} hr_Mode;
-
-/* Orientation modes for handling user-selected orientation of display */
-typedef enum ORIENTATION_MODE {
-    LEFT_HANDED, RIGHT_HANDED
-} orientation_Mode;
-
-/* ------------------- G L O B A L     V A R I A B L E S  ------------------ */
-
-hr_Mode HR_MODE;
-orientation_Mode POS;
-
-
 /* ---------------------- S E G M E N T    C O D E S ----------------------- */
 
 const unsigned int seg_Codes_RH[] = {1, 512, 8, 16, 4, 2048, 256};
@@ -118,17 +113,7 @@ void display_Time(unsigned int time, byte mode);
 
 void init_Filament_Driver(void);
 
-void load_Brightness(void);
-
-void load_Orientation(void);
-
-void load_Hr_Mode(void);
-
-int shift_Segments(int code_In, signed char placement);
-
 void send_Code(unsigned int code);
-
-void update_Local_Settings(void);
 
 #endif
 

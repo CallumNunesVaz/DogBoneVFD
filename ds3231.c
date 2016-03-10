@@ -1,9 +1,15 @@
-/*
- * File:   ds3231.c
- * Author: Callum
- *
- * Created on 10 February 2016, 5:11 PM
- */
+/* -------------------------------------------------------------------------- *
+ * File: ds3231.c
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * A simple library for accessing the data from the ds3231 real-time clock, as
+ * well as setting it. Included are functions to increment the units for each 
+ * register and toggle between 12 and 24 hour modes.
+ * -------------------------------------------------------------------------- */
 
 #include "ds3231.h"
 
@@ -11,23 +17,23 @@
 
 /* Get the current date from the DS3231 clock */
 byte get_Day(void) {
-    return read_DS3231_byte(0x04);
+    return read_Ds3231_Byte(REG_DS3231_DAY);
 }
 
 /* Retrieve the hours portion (byte) of the time from the DS3231M real time 
  * clock over i2C and don't assign to the 'time' variable */
 byte get_Hours(void) {
-    return read_DS3231_byte(0x02);
+    return read_Ds3231_Byte(REG_DS3231_HOURS);
 }
 
 /* retrieve minutes byte from clock */
 byte get_Minutes(void) {
-    return read_DS3231_byte(0x01);
+    return read_Ds3231_Byte(REG_DS3231_MINUTES);
 }
 
 /* Get the current date from the DS3231 clock */
 byte get_Month(void) {
-    return read_DS3231_byte(0x05);
+    return read_Ds3231_Byte(REG_DS3231_MONTH_CENTURY);
 }
 
 /* retrieve time over I2C in BCD from the DS3231M real-time clock module */
@@ -41,7 +47,7 @@ int get_Time(void) {
 
 /* retrieve minutes byte from clock */
 byte get_Year(void) {
-    return read_DS3231_byte(0x06);
+    return read_Ds3231_Byte(REG_DS3231_YEAR);
 }
 
 /* increment the hours on the DS3231M Clock */
@@ -120,9 +126,15 @@ void inc_Years(void) {
     set_Year(temp);
 }
 
+/* Initialise the DS3231M RTC for use in the circuit */
+void init_ds3231 (void) {
+    write_Ds3231_Byte(0x00, REG_DS3231_CONTROL);
+    write_Ds3231_Byte(0x00, REG_DS3231_STATUS);
+}
+
 /* Because of the numerous single byte write routines for the clock, a general
  * routine provides a simpler interface of doing so */
-byte read_DS3231_byte(byte reg) {
+byte read_Ds3231_Byte(byte reg) {
     byte temp;
     I2CStartBit(); // start communication
     I2CSend(DS3231_ADDR + I2C_WRITE);
@@ -137,32 +149,32 @@ byte read_DS3231_byte(byte reg) {
 
 /* Set the minutes on the DS3231M Clock */
 void set_Minutes(byte mins) {
-    write_DS3231_byte(mins, 0x01);
+    write_Ds3231_Byte(mins, REG_DS3231_MINUTES);
 }
 
 /* set the days on the DS3231 clock */
 void set_Days(byte days) {
-    write_DS3231_byte(days, 0x04);
+    write_Ds3231_Byte(days, REG_DS3231_DAY);
 }
 
 /* Set the hours on the DS3231M Clock */
 void set_Hours(byte hours) {
-    write_DS3231_byte(hours, 0x02);
+    write_Ds3231_Byte(hours, REG_DS3231_HOURS);
 }
 
 /* Set the months on the DS3231M Clock */
 void set_Month(byte months) {
-    write_DS3231_byte(months, 0x05);
+    write_Ds3231_Byte(months, REG_DS3231_MONTH_CENTURY);
 }
 
 /* Set the Years on the DS3231M Clock */
 void set_Year(byte years) {
-    write_DS3231_byte(years, 0x06);
+    write_Ds3231_Byte(years, REG_DS3231_YEAR);
 }
 
 /* Because of the numerous single byte write routines for the clock, a general
  * routine provides a simpler interface of doing so */
-void write_DS3231_byte(byte data, byte reg) {
+void write_Ds3231_Byte(byte data, byte reg) {
     I2CStartBit();
     I2CSend(DS3231_ADDR + I2C_WRITE);
     I2CSend(reg);

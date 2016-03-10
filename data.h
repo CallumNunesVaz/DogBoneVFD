@@ -1,6 +1,16 @@
+/* -------------------------------------------------------------------------- *
+ * File: data.h
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * Simple Library for managing the data that the wristwatch needs to operate.
+ * This includes get and set methods for the EEPROM-stored, as well as standard 
+ * byte to 4-bit BCD byte conversion.
+ * -------------------------------------------------------------------------- */
 
-// This is a guard condition so that contents of this file are not included
-// more than once.  
 #ifndef DATA_H
 #define	DATA_H
 
@@ -32,7 +42,7 @@ byte bcd_To_Byte(byte data);
 
 byte byte_To_BCD(byte data);
 
-byte read_DS3231_byte(byte reg);
+byte read_Ds3231_Byte(byte reg);
 
 byte get_Timeout_EEPROM(void);
 

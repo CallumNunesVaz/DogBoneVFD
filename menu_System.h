@@ -1,11 +1,24 @@
+/* -------------------------------------------------------------------------- *
+ * File: menu_System.h
+ * 
+ * Author: Callum Nunes-Vaz
+ * 
+ * Date: 26th Feb 2016
+ * 
+ * Description:
+ * A library for managing the menu system of a wristwatch that draws letters,
+ * digits, and symbols on the 4 7-segment sections. This library also manages 
+ * the button presses and their actions.
+ * -------------------------------------------------------------------------- */
+
 #ifndef MENU_SYSTEM_H
 #define	MENU_SYSTEM_H
 
-#include <xc.h> // include processor files - each processor file is guarded.
+#include <xc.h>
 #include "data.h"
 #include "display.h"
 #include "data.h"
-#include "mma8451q.h"
+#include "mma8451.h"
 #include "ds3231.h"
 
 /* ------------------------- D E F I N I T I O N S ------------------------- */
@@ -37,7 +50,19 @@
 #define ANGLE_LIVE 13
 #define DATE 14
 
+typedef enum HR_MODE {
+    MODE_12H, MODE_24H
+} hr_Mode;
+
+/* Orientation modes for handling user-selected orientation of display */
+typedef enum ORIENTATION_MODE {
+    LEFT_HANDED, RIGHT_HANDED
+} orientation_Mode;
+
 /* ------------------- G L O B A L     V A R I A B L E S  ------------------ */
+
+hr_Mode HR_MODE;
+orientation_Mode POS;
 
 const byte menu_Letters_GRID1[] = {19,19,19,3,10,18,1,0,4,6,16,19,9,0,3};
 const byte menu_Letters_GRID2[] = {19,19,19,19,10,14,14,10,14,14,11,6,19,19,3};
@@ -48,10 +73,15 @@ void display_Current_Menu(void);
 void init_Menu_System(void);
 void init_Timers(void);
 void load_Brightness(void);
+void load_Brightness(void);
+void load_Orientation(void);
+void load_Hr_Mode(void);
 void next_Menu(void);
 void load_Menu(byte count);
 void perform_Switch2_Action(void);
 void reset_Menu(void);
+int shift_Segments(int code_In, signed char dir);
+void update_Local_Settings(void);
 
 #endif
 
